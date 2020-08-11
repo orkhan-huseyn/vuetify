@@ -2,8 +2,11 @@ const Vue = require('vue')
 const Vuetify = require('vuetify')
 const fs = require('fs')
 const map = require('./helpers/map')
+const locale = require('./helpers/locale')
 const deepmerge = require('./helpers/merge')
 const pkg = require('../package.json')
+
+// console.log(locale)
 
 const camelizeRE = /-(\w)/g
 const camelize = str => {
@@ -184,6 +187,7 @@ function parseVariables () {
   return variables
 }
 
+// Generate components and directives
 const components = {}
 const directives = {}
 
@@ -209,7 +213,10 @@ for (const name in installedComponents) {
   if (map[kebabName]) {
     options = deepmerge(options, map[kebabName])
   }
-
+  // add en locale description
+  if (locale.en[kebabName]) {
+    options = deepmerge(options, locale.en[kebabName])
+  }
   components[kebabName] = options
 }
 
@@ -218,7 +225,9 @@ for (const key of ['Mutate', 'Intersect', 'Ripple', 'Resize', 'Scroll', 'Touch',
 
   const lowerCaseVersion = hyphenate(key).toLowerCase()
   const vKey = `v-${lowerCaseVersion}`
-  const directive = map[vKey]
+  let directive = map[vKey]
+  //add directive description
+  directive = deepmerge(directive, locale.en[vKey])
   directive.type = getPropDefault(directive.default, directive.type)
   directives[vKey] = directive
 }
