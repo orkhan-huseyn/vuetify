@@ -219,7 +219,7 @@ for (const key of ['Mutate', 'Intersect', 'Ripple', 'Resize', 'Scroll', 'Touch',
 
   const lowerCaseVersion = hyphenate(key).toLowerCase()
   const vKey = `v-${lowerCaseVersion}`
-  let directive = map[vKey]
+  const directive = map[vKey]
 
   directive.type = getPropDefault(directive.default, directive.type)
   directives[vKey] = directive
@@ -277,7 +277,7 @@ function genApiLocale (locale, components, localeData) {
             ? localeData[comp][type][item.name]
             : (localeData[item.source] && localeData[item.source][type] && localeData[item.source][type][item.name])
               ? localeData[item.source][type][item.name]
-              :(localeData.generic && localeData.generic[type] && localeData.generic[type][item.name])
+              : (localeData.generic && localeData.generic[type] && localeData.generic[type][item.name])
                 ? localeData.generic[type][item.name]
                 : 'Missing description'
           item.description = description
@@ -342,7 +342,6 @@ const fakeComponents = ts => {
     return `${inspection}Vue.component('${component}', {${props}})`
   }).join('\n')
 }
-
 
 const variables = parseVariables()
 

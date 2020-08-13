@@ -1,7 +1,7 @@
 const fs = require('fs')
 
 function getLocaleData () {
-  let localeData = {}
+  const localeData = {}
   const localeFolders = fs.readdirSync('./src/locale')
   localeFolders.forEach(folder => {
     const locale = {}
