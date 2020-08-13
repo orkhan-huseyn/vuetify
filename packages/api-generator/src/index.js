@@ -2,11 +2,9 @@ const Vue = require('vue')
 const Vuetify = require('vuetify')
 const fs = require('fs')
 const map = require('./helpers/map')
-const locale = require('./helpers/locale')
+const locales = require('./helpers/locales')
 const deepmerge = require('./helpers/merge')
 const pkg = require('../package.json')
-
-// console.log(locale)
 
 const camelizeRE = /-(\w)/g
 const camelize = str => {
@@ -213,10 +211,6 @@ for (const name in installedComponents) {
   if (map[kebabName]) {
     options = deepmerge(options, map[kebabName])
   }
-  // add en locale description
-  if (locale.en[kebabName]) {
-    options = deepmerge(options, locale.en[kebabName])
-  }
   components[kebabName] = options
 }
 
@@ -226,8 +220,7 @@ for (const key of ['Mutate', 'Intersect', 'Ripple', 'Resize', 'Scroll', 'Touch',
   const lowerCaseVersion = hyphenate(key).toLowerCase()
   const vKey = `v-${lowerCaseVersion}`
   let directive = map[vKey]
-  //add directive description
-  directive = deepmerge(directive, locale.en[vKey])
+
   directive.type = getPropDefault(directive.default, directive.type)
   directives[vKey] = directive
 }
@@ -268,6 +261,31 @@ function writePlainFile (content, file) {
     stream.write(content)
     stream.end()
   })
+}
+
+function genApiLocale (locale, components, localeData) {
+  for (const [comp, compData] of Object.entries(components)) {
+    // attach sass vars to also
+    compData.sass = variables[comp] || []
+
+    // attach descriptions
+    for (const [type, items] of Object.entries(compData)) {
+      if (type !== 'mixins') {
+        for (const item of items) {
+          // get description component -> inherited -> generic -> missing
+          const description = (localeData[comp] && localeData[comp][type] && localeData[comp][item.name])
+            ? localeData[comp][type][item.name]
+            : (localeData[item.source] && localeData[item.source][type] && localeData[item.source][type][item.name])
+              ? localeData[item.source][type][item.name]
+              :(localeData.generic && localeData.generic[type] && localeData.generic[type][item.name])
+                ? localeData.generic[type][item.name]
+                : 'Missing description'
+          item.description = description
+        }
+      }
+    }
+  }
+  return components
 }
 
 const tags = Object.keys(components).reduce((t, k) => {
@@ -325,12 +343,15 @@ const fakeComponents = ts => {
   }).join('\n')
 }
 
+
 const variables = parseVariables()
 
 if (!fs.existsSync('dist')) {
   fs.mkdirSync('dist', 0o755)
 }
 
+// will likely want to tie in en desc
+// for vetur support at some point
 writeJsonFile(tags, 'dist/tags.json')
 writeJsonFile(attributes, 'dist/attributes.json')
 writeJsonFile(variables, 'dist/variables.json')
@@ -355,7 +376,14 @@ const webTypes = {
 components['$vuetify'] = map['$vuetify']
 components['internationalization'] = map['internationalization']
 
-writeApiFile({ ...components, ...directives }, 'dist/api.js')
+// generate api for all locales
+const componentApi = {}
+for (const [locale, localeData] of Object.entries(locales)) {
+  componentApi[locale] = genApiLocale(locale, { ...components, ...directives }, localeData)
+  console.log(components['v-alert'].props[0])
+}
+
+writeApiFile(componentApi, 'dist/api.js')
 
 delete components['$vuetify']
 delete components['internationalization']
